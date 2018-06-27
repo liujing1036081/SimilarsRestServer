@@ -1,10 +1,6 @@
 import json
 from annoy import AnnoyIndex
-from pipeline import Pipeline, Reader, LineOps, ListOps, DictOps
-
-# subtitle_corpus = 'data/subtitle.corpus'
-# wanghong_corpus = 'data/test.jsonl'
-wanghong_corpus = 'find_sent_similars/share/data/u_q_wh15m_qas_raw.txt'
+from .pipeline import Pipeline, Reader, LineOps
 
 
 class FileReader(Reader):
@@ -157,23 +153,54 @@ def annoy_load(annoy_file):
     return annoy
 
 
-# 读取原始数据
-def ori_dataReader(filename):
+# 读取原始数据qa
+def ori_dataReader_non_qa(filename):
     # 单句输入模式
     wh_reader = FileReader(filename, batch_size=100)
     wh_pipe = Pipeline(wh_reader, [LineOps.remove_tail_marks])  # 纯文本模式
     wh_lines = wh_pipe.run()
     return wh_lines
 
-'''
-源文件格式是q a模式的文件'''
-'''
-源文件格式是非q a 模式的行文本'''
+
+# 读取原始数据qa
+def ori_dataReader_qa(filename):
+    # 单句输入模式
+    wh_reader = FileReader(filename, batch_size=100)
+    wh_pipe = Pipeline(wh_reader, [LineOps.parse_json, get_question])  # qa文本模式
+    wh_lines = wh_pipe.run()
+    return wh_lines
 
 
-def non_qa_mod(ori_filename, ann_file, similars_file):
+def qa_mod(ori_filename, ann_file, similars_file):
     print('开始build。。。。')
-    wh_lines = ori_dataReader(ori_filename)
+    wh_lines = ori_dataReader_qa(ori_filename)
+    # print(len(wh_lines), wh_lines[:3])
+    avg = embedd_load()
+    print('加载avg')
+    line_avg = Pipeline([wh_lines], [avg])
+    vecs = line_avg.run()
+    print(len(vecs), len(wh_lines))
+    build_annoy(vecs, ann_file)
+    save_similars(ann_file, wh_lines,
+                  similars_file)
+
+
+# def non_qa_mod(ori_filename, ann_file, similars_file):
+
+
+if __name__ == '__main__':
+    ori_filename = './opt/data/yy/yy_wh_data.json'
+    ann_file = './opt/share/yy/yy_wh_emb100.ann'
+    similars_file = './opt/share/yy/yy_wh_similars.jsonl'
+    # 生成索引文件和近似群文件
+    print('开始build。。。。')
+
+    # 源文件格式是q a模式的文件
+    wh_lines = ori_dataReader_qa(ori_filename)
+
+    # 源文件格式是非q a 模式的行文本
+    # wh_lines = ori_dataReader_non_qa(ori_filename)
+
     # print(len(wh_lines), wh_lines[:3])
     avg = embedd_load()
     print('加载avg')

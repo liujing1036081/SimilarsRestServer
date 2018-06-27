@@ -3,11 +3,10 @@ import json
 
 import falcon
 
-from find_similars_unit import predict_similars
-import start_handle
+from unit.find_similars_unit import predict_similars
 
 
-class predictHandle(object):
+class predictResource(object):
     def __init__(self, pig_dic, avg):
         self.pig_dic = pig_dic
         self.avg = avg
@@ -38,16 +37,19 @@ class predictHandle(object):
             sent_chunk = json.loads(chunk.decode('utf-8'))
             in_sent = sent_chunk['sent']
             sent_vecs = self.avg(in_sent)
-            sent, candidates = predict_similars(self.pig_dic[pig_name]['annoy'],
+            candidates, cosine = predict_similars(self.pig_dic[pig_name]['annoy'],
                                                 self.pig_dic[pig_name]['wh_lines'],
-                                                in_sent, sent_vecs)
+                                                sent_vecs)
 
-            list_candtes = str(candidates[1][0])
+            list_candtes = str(candidates[0])
+            cosine_first = cosine[0]
             quote = {
                 'sent': (
-                    sent
+                    in_sent
                 ),
-                'candidates': list_candtes
+                'candidates': list_candtes,
+                'cosine': cosine_first
+
             }
 
             resp.status = falcon.HTTP_200

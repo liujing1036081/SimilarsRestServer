@@ -1,6 +1,8 @@
 import numpy
 from annoy import AnnoyIndex
-from pipeline import Pipeline, Reader, LineOps
+
+from unit.config import embedd_file
+from .pipeline import Pipeline, Reader, LineOps
 import numpy as np
 
 
@@ -93,7 +95,7 @@ def cosin_fun(vec1, vec2):
     return cos
 
 
-def get_nns_by_vector(annoy, questions, sent, sent_vec, topk):
+def get_nns_by_vector(annoy, questions, sent_vec, topk):
     items = annoy.get_nns_by_vector(sent_vec, topk)
     # 计算in_sent和候选近似群之间的近似度（cosine距离）
     candidates_dict = {}
@@ -101,18 +103,21 @@ def get_nns_by_vector(annoy, questions, sent, sent_vec, topk):
         candidates_dict[index] = cosin_fun(sent_vec, annoy.get_item_vector(index))
     # 根据cosine近似度进行倒序排序,得到列表元祖(index, cosine_value)
     candidates_list = sorted(candidates_dict.items(), key=lambda d: d[1], reverse=True)
-    candidates = list([questions[k[0]], k[1]] for k in candidates_list)
-    yield sent, candidates
+    candidates = list(questions[k[0]] for k in candidates_list)
+    cosine = list(k[1] for k in candidates_list)
+    yield candidates, cosine
 
 
-def predict_similars(annoy, sentences, sent, sent_vec):
-    for candidates in get_nns_by_vector(annoy, sentences, sent, sent_vec, topk=10):
-        print(candidates)
-        return sent, candidates
+def predict_similars(annoy, sentences, sent_vec):
+    for candidates, cosine in get_nns_by_vector(annoy, sentences, sent_vec, topk=10):
+        print('检索得到的近似句和对应的余弦值： ')
+        for i in range(len(candidates)):
+            print(candidates[i], cosine[i])
+        return candidates, cosine
 
 
 def embedd_load():
-    embedding = load_embedding('opt/data/glove.6B.100d.txt')
+    embedding = load_embedding(embedd_file)
     avg = AvgTransformer(embedding)
     return avg
 
@@ -123,9 +128,16 @@ def ann_load(annoy_file):
     return annoy
 
 
-# 读取检索近似取群的json数据
-def ori_dataReader(filename):
+# 读取检索近似群的json数据
+def ori_dataReader_non_qa(filename):
     wh_reader = FileReader(filename, batch_size=100)
     wh_pipe = Pipeline(wh_reader, [LineOps.remove_tail_marks])  # 纯文本模式
     wh_lines = wh_pipe.run()
     return wh_lines
+
+def ori_dataReader_qa(filename):
+    wh_reader = FileReader(filename, batch_size=100)
+    wh_pipe = Pipeline(wh_reader, [LineOps.parse_json, get_question])  # qa文本模式
+    wh_lines = wh_pipe.run()
+    return wh_lines
+

@@ -1,5 +1,5 @@
 import json
-from find_similars_unit import embedd_load, annoy_load, ori_dataReader
+from unit.find_similars_unit import embedd_load, ann_load, ori_dataReader
 import sys
 import os
 
@@ -7,8 +7,9 @@ import os
 输入批量问题文本（txt文本）,
 输出近似文本群,
 保存在json文件中.
-使用方式：在命令行中 python find_similars_test.py  share/data/u_q_wh15m_qas_raw.txt share/data/wh_emb100.ann data/test.txt share/data/wh_test_similars.jsonl
+使用方式：在命令行中 python find_similars_batch.py  share/data/u_q_wh15m_qas_raw.txt share/data/wh_emb100.ann data/test.txt share/data/wh_test_similars.jsonl
 '''
+
 
 def get_nns_by_vector(annoy, questions, wh_lines, topk=10):  # questions 是测试数据，wh_lines 是源数据
     queries = set()
@@ -33,7 +34,7 @@ def get_nns_by_vector(annoy, questions, wh_lines, topk=10):  # questions 是测�
 
 def save_similars(sentences, wh_lines, outfile, ann_file):  # 这里的sentences是测试数据
     # load ann index
-    annoy = annoy_load(ann_file)
+    annoy = ann_load(ann_file)
     # find similars and save
     with open(outfile, 'w') as fp:
         for sent, candidates in get_nns_by_vector(annoy, sentences, wh_lines):

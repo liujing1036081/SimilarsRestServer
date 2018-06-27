@@ -1,10 +1,12 @@
 import os
 
-
 # 读文件夹获取项目名称列表
+from unit.config import ori_data_root, save_file_root
+
+
 def pig_name_list_get():
     pig_list = []
-    path = "opt/share/"
+    path = ori_data_root
     dirs = os.listdir(path)
     for file in dirs:
         pig_list.append(file)
@@ -18,11 +20,11 @@ def file_get(pig_list):
         # print(type(pig_name))
         dic = {pig_name: {}}
         dic[pig_name]['name'] = pig_name
-        ori_file_dir = 'opt/data/' + pig_name + '/'
-        share_file_dir = 'opt/share/' + pig_name + '/'
+        ori_file_dir = ori_data_root + pig_name
+        share_file_dir = save_file_root + pig_name
         for dirpath, dirnames, filenames in os.walk(ori_file_dir):
             for file in filenames:
-                if os.path.splitext(file)[1] == '.txt':
+                if os.path.splitext(file)[1] == '.json':
                     dic[pig_name]['ori_file'] = os.path.join(dirpath, file)
 
         for dirpath, dirnames, filenames in os.walk(share_file_dir):
@@ -32,7 +34,7 @@ def file_get(pig_list):
                 if os.path.splitext(file)[1] == '.jsonl':
                     dic[pig_name]['similars_file'] = os.path.join(dirpath, file)
         pig_file_dic.update(dic)
-    print(pig_file_dic)
+    print('已存在的项目有： ', pig_file_dic.keys())
     return pig_file_dic
 
 
